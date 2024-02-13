@@ -130,4 +130,4 @@ dist
 package/
 
 # Types
-./src/ts/types
+src/ts/types/
