@@ -26,6 +26,8 @@ declare class TownshipBiome extends NamespacedObject {
     buildingsBuilt: Map<TownshipBuilding, number>;
     /** The efficiency of buildings that have been built in the biome */
     buildingEfficiency: Map<TownshipBuilding, number>;
+    /** Cache of buildings that are available in this biome. Used to only render buildings for the selected biome */
+    availableBuildings: TownshipBuilding[];
     constructor(namespace: DataNamespace, data: TownshipBiomeData, game: Game);
     /** Returns the number of a particular building that has been built in the biome */
     getBuildingCount(building: TownshipBuilding): number;
@@ -33,8 +35,8 @@ declare class TownshipBiome extends NamespacedObject {
     removeBuildings(building: TownshipBuilding, count: number): void;
     addBuildings(building: TownshipBuilding, count: number): void;
     getBuildingEfficiency(building: TownshipBuilding): number;
-    reduceBuildingEfficiency(building: TownshipBuilding, amount: number): void;
-    setBuildingEfficiency(building: TownshipBuilding, amount: number): void;
+    reduceBuildingEfficiency(building: TownshipBuilding, amount: number, game: Game): void;
+    setBuildingEfficiency(building: TownshipBuilding, amount: number): boolean;
 }
 declare class DummyTownshipBiome extends TownshipBiome {
     constructor(namespace: DataNamespace, id: string, game: Game);
@@ -91,6 +93,8 @@ interface TownshipBuildingData extends IDData {
     modifiers?: PlayerModifierData;
     /** The maximum number of times this building can be upgraded. Integer between [1, Infinity) */
     maxUpgrades: number;
+    /** Optional. Whether the building efficiency automatically decays over time. Default is true */
+    canDegrade: boolean;
 }
 declare class TownshipBuilding extends NamespacedObject {
     get name(): string;
@@ -105,6 +109,7 @@ declare class TownshipBuilding extends NamespacedObject {
     biomes: TownshipBiome[];
     modifiers?: PlayerModifierObject;
     maxUpgrades: number;
+    canDegrade: boolean;
     upgradeChain: TownshipBuilding[];
     /** Modifiers that are currently provided by the given building */
     providedModifiers?: MappedModifiers;
@@ -319,6 +324,12 @@ declare class TownshipRenderQueue extends SkillRenderQueue {
     casualTaskTimer: boolean;
     /** Updates the task ready icon */
     taskReadyIcon: boolean;
+    /** Updates the active task category */
+    activeTaskCategory: boolean;
+    /** Updates Town Summary for current biome */
+    townSummary: boolean;
+    /** Updated building modifier text */
+    buildingModifiers: boolean;
 }
 declare class Township extends Skill<TownshipSkillData> implements StatProvider, PassiveAction {
     readonly _media: string;
@@ -388,6 +399,7 @@ declare class Township extends Skill<TownshipSkillData> implements StatProvider,
     get currentHappiness(): number;
     get nightfallSeasonEnabled(): boolean;
     get solarEclipseSeasonEnabled(): boolean;
+    get lemonSeasonEnabled(): boolean;
     /** Callback function for the Repair All in this Biome button */
     repairAllBuildingsInCurrentBiome(): void;
     /** Callback function for the Repair All button */
@@ -452,6 +464,7 @@ declare class Township extends Skill<TownshipSkillData> implements StatProvider,
     renderDailyTaskCount(): void;
     renderCasualTaskTimer(): void;
     renderTaskReadyIcon(): void;
+    renderActiveTaskCategory(): void;
     renderTownAge(): void;
     renderBuildingProvides(): void;
     renderBiomeProgress(): void;
@@ -463,6 +476,8 @@ declare class Township extends Skill<TownshipSkillData> implements StatProvider,
     renderUpdateTime(): void;
     renderUpdateSeason(): void;
     render(): void;
+    renderBuildingModifiers(): void;
+    renderTownSummary(): void;
     initTownCreation(): void;
     updateConvertType(type: TownshipConvertType): void;
     /** Callback method */
@@ -480,6 +495,7 @@ declare class Township extends Skill<TownshipSkillData> implements StatProvider,
     /** @deprecated This method will be removed in the next major update. Use renderModifierChange instead */
     onModifierChange(): void;
     onPageChange(): void;
+    onAncientRelicUnlock(): void;
     renderModifierChange(): void;
     passiveTick(): void;
     /** Starts the tick timer at the passive tick interval */
@@ -573,6 +589,8 @@ declare class Township extends Skill<TownshipSkillData> implements StatProvider,
     getMaxPossibleConvertToTownshipValue(item: AnyItem, resource: TownshipResource): number;
     getMaxPossibleConvertFromTownshipValue(resource: TownshipResource, convertRatio: number): number;
     testTranslations(): void;
+    getObtainableItems(): Set<AnyItem>;
+    buildingRequiresRepair(building: TownshipBuilding, biome: TownshipBiome | undefined): boolean;
 }
 declare const enum TownshipPage {
     Town = 0,
@@ -743,6 +761,7 @@ declare class TownshipUI {
     updateTownBuildingProvides(): void;
     displayTownSummary(): void;
     updateAllBuildingNames(): void;
+    updateAllBuildingTotalModifierElements(): void;
     updateBuildingTotalModifierElement(building: TownshipBuilding): void;
     updateBuildingTotalOutput(building: TownshipBuilding): void;
     createWorshipSelection(): void;
