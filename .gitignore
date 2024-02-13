@@ -128,3 +128,6 @@ dist
 
 # Other
 package/
+
+# Types
+./src/ts/types
