@@ -1,6 +1,3 @@
-# Introduction
-This is a boilerplate/template for Melvor Idle mods. Using TypeScript with Webpack, this will compile your mod to a single, uglified script file, largely reducing mod size and improving compatibilty with IDE features. The downside to this is it makes debugging in the browser a bit more difficult with the uglified source.
-
 # Prerequisites
 Requires [Node.js](https://nodejs.org/en/)
 
